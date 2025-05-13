@@ -108,7 +108,7 @@ public class Tokenizer{
         }
     }
     
-    fileprivate func mecabTokenize(text:String, transliteration:Transliteration = .hiragana,isUnidicTokenizer:Bool = false)->[Annotation]{
+    fileprivate func mecabTokenize(text:String, transliteration:Transliteration = .hiragana)->[Annotation]{
         let tokens=text.precomposedStringWithCanonicalMapping.withCString({s->[Token] in
            var tokens=[Token]()
            var node=mecab_sparse_tonode(self._mecab, s)
@@ -134,7 +134,7 @@ public class Tokenizer{
            }
            if let foundRange=text.range(of: searchString, options: [], range: searchRange, locale: nil){
                var annotation=Annotation(token: token, range: foundRange, transliteration: transliteration)
-               annotation.isUniType = isUnidicTokenizer
+               annotation.isUniType = self.isUnidicTokenizer
                annotations.append(annotation)
                
                if foundRange.upperBound < text.endIndex{
