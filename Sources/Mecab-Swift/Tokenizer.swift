@@ -33,6 +33,12 @@ public class Tokenizer{
     
     fileprivate let _mecab:OpaquePointer!
     
+    // 缓存结构，使用元组（text, transliteration）作为键，存储分词结果
+    private var tokenCache: [String: [Annotation]] = [:]
+    
+    // 最大缓存大小
+    private var maxCacheSize: Int = 1000
+    
     /**
      The version of the underlying mecab engine.
      */
@@ -69,10 +75,11 @@ public class Tokenizer{
      - throws:
         * `TokenizerError`: Typically an error that indicates that the dictionary didn't exist or couldn't be opened.
      */
-    public init(dictionary:DictionaryProviding,isUnidic:Bool=false) throws{
+    public init(dictionary:DictionaryProviding, isUnidic:Bool=false, maxCacheSize: Int = 1000) throws{
         self.dictionary=dictionary
         self.isSystemTokenizer=false
         self.isUnidicTokenizer=isUnidic
+        self.maxCacheSize = maxCacheSize
 
         let tokenizer=try dictionary.url.withUnsafeFileSystemRepresentation({path->OpaquePointer in
             guard let path=path,
@@ -100,11 +107,50 @@ public class Tokenizer{
      - returns: An array of `Annotation`, a struct that contains the found tokens (the token value, the reading, POS, etc.).
      */
     public func tokenize(text:String, transliteration:Transliteration = .hiragana)->[Annotation]{
+        // 创建缓存键
+        let cacheKey = text + String(transliteration.hashValue)
+        
+        // 检查缓存是否存在结果
+        if let cachedResult = tokenCache[cacheKey] {
+            return cachedResult
+        }
+        
+        let result: [Annotation]
         if self.isSystemTokenizer{
-            return self.systemTokenizerTokenize(text: text, transliteration: transliteration)
+            result = self.systemTokenizerTokenize(text: text, transliteration: transliteration)
         }
         else{
-            return mecabTokenize(text: text, transliteration: transliteration)
+            result = mecabTokenize(text: text, transliteration: transliteration)
+        }
+        
+        // 添加结果到缓存
+        if result.count > 0 {
+            // 如果缓存即将超过最大大小，移除最旧的条目
+            if tokenCache.count >= maxCacheSize {
+                let _ = tokenCache.removeFirst()
+            }
+            tokenCache[cacheKey] = result
+        }
+        
+        return result
+    }
+    
+    /**
+     清除分词缓存
+     */
+    public func clearCache() {
+        tokenCache.removeAll()
+    }
+    
+    /**
+     设置最大缓存大小
+     - parameter size: 新的最大缓存大小
+     */
+    public func setMaxCacheSize(size: Int) {
+        maxCacheSize = size
+        // 如果当前缓存大小超过新的最大大小，移除最旧的条目
+        while tokenCache.count > maxCacheSize {
+            let _ = tokenCache.removeFirst()
         }
     }
     
