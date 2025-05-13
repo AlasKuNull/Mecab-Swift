@@ -127,7 +127,9 @@ public class Tokenizer{
         if result.count > 0 {
             // 如果缓存即将超过最大大小，移除最旧的条目
             if tokenCache.count >= maxCacheSize {
-                let _ = tokenCache.removeFirst()
+                if let firstKey = tokenCache.keys.first {
+                    tokenCache.removeValue(forKey: firstKey)
+                }
             }
             tokenCache[cacheKey] = result
         }
@@ -150,7 +152,11 @@ public class Tokenizer{
         maxCacheSize = size
         // 如果当前缓存大小超过新的最大大小，移除最旧的条目
         while tokenCache.count > maxCacheSize {
-            let _ = tokenCache.removeFirst()
+            if let firstKey = tokenCache.keys.first {
+                tokenCache.removeValue(forKey: firstKey)
+            } else {
+                break
+            }
         }
     }
     
