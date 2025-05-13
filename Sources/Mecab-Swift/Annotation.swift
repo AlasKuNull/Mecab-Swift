@@ -21,21 +21,22 @@ public struct Annotation:Equatable, FuriganaAnnotating{
     
     public let base:String
     public let reading:String
+    public let features:[String]
     public let partOfSpeech:PartOfSpeech
     public let range:Range<String.Index>
     public let dictionaryForm:String
     let transliteration:Tokenizer.Transliteration
     
     init(token:Token, range:Range<String.Index>, transliteration:Tokenizer.Transliteration) {
-        self.init(base: token.original, reading: token.reading, range: range, dictionaryForm: token.dictionaryForm, transliteration: transliteration, POS: token.partOfSpeech)
+        self.init(base: token.original, reading: token.reading, features:token.features, range: range, dictionaryForm: token.dictionaryForm, transliteration: transliteration, POS: token.partOfSpeech)
     }
     
-    init(base:String, reading:String, range:Range<String.Index>, dictionaryForm:String, transliteration:Tokenizer.Transliteration, POS:PartOfSpeech = .unknown){
+    init(base:String, reading:String, features: [String], range:Range<String.Index>, dictionaryForm:String, transliteration:Tokenizer.Transliteration, POS:PartOfSpeech = .unknown){
         self.base=base
         self.range=range
         self.partOfSpeech = POS
         self.transliteration = transliteration
-        
+        self.features = features
         switch transliteration {
         case .katakana:
             self.reading=reading
