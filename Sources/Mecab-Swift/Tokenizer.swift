@@ -43,10 +43,12 @@ public class Tokenizer{
     
     
     fileprivate let isSystemTokenizer:Bool
+    fileprivate let isUnidicTokenizer:Bool
 
     #if canImport(CoreFoundation)
     fileprivate init(){
         self.isSystemTokenizer=true
+        self.isUnidicTokenizer=true
         self.dictionary=SystemDictionary()
         _mecab=nil
     }
@@ -67,9 +69,11 @@ public class Tokenizer{
      - throws:
         * `TokenizerError`: Typically an error that indicates that the dictionary didn't exist or couldn't be opened.
      */
-    public init(dictionary:DictionaryProviding) throws{
+    public init(dictionary:DictionaryProviding,isUnidic:Bool=false) throws{
         self.dictionary=dictionary
         self.isSystemTokenizer=false
+        self.isUnidicTokenizer=isUnidic
+
         let tokenizer=try dictionary.url.withUnsafeFileSystemRepresentation({path->OpaquePointer in
             guard let path=path,
                 let dictPath=String(cString: path).addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)
@@ -104,7 +108,7 @@ public class Tokenizer{
         }
     }
     
-    fileprivate func mecabTokenize(text:String, transliteration:Transliteration = .hiragana)->[Annotation]{
+    fileprivate func mecabTokenize(text:String, transliteration:Transliteration = .hiragana,isUnidicTokenizer:Bool = false)->[Annotation]{
         let tokens=text.precomposedStringWithCanonicalMapping.withCString({s->[Token] in
            var tokens=[Token]()
            var node=mecab_sparse_tonode(self._mecab, s)
@@ -129,7 +133,8 @@ public class Tokenizer{
                continue
            }
            if let foundRange=text.range(of: searchString, options: [], range: searchRange, locale: nil){
-               let annotation=Annotation(token: token, range: foundRange, transliteration: transliteration)
+               var annotation=Annotation(token: token, range: foundRange, transliteration: transliteration)
+               annotation.isUniType = isUnidicTokenizer
                annotations.append(annotation)
                
                if foundRange.upperBound < text.endIndex{

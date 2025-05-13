@@ -14,7 +14,7 @@ extension Tokenizer{
     func systemTokenizerTokenize(text:String, transliteration:Transliteration = .hiragana)->[Annotation]{
         
         return text.systemTokenizerFuriganaAnnotations().map({annotation in
-            return Annotation(base: annotation.base, reading: annotation.reading, range: annotation.range, dictionaryForm: text, transliteration: transliteration)
+            return Annotation(base: annotation.base, reading: annotation.reading,features: [], range: annotation.range, dictionaryForm: text, transliteration: transliteration)
         })
         
     }

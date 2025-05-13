@@ -19,6 +19,7 @@ import Dictionary
 
 public struct Annotation:Equatable, FuriganaAnnotating{
     
+    public var isUniType:Bool=false
     public let base:String
     public let reading:String
     public let features:[String]
@@ -69,6 +70,16 @@ public struct Annotation:Equatable, FuriganaAnnotating{
     }
     
     
+    
+    public var pos: String {
+        if isUniType {
+            return features.first ?? ""
+        }else{
+            return partOfSpeech.description
+
+        }
+    }
+
     
     /**
         A convenience function to create properly formatted `FuriganaAnnotations` from an `Annotation`
