@@ -79,6 +79,80 @@ public struct Annotation:Equatable, FuriganaAnnotating{
 
         }
     }
+    
+    public var originalForm: String {
+                
+        if isUniType {
+            if features.count >= 8 {
+                return features[7]
+            }
+            return ""
+        }else{
+            return dictionaryForm
+
+        }
+    }
+    
+    public var pron: String {
+        
+        switch transliteration {
+        case .katakana:
+            if isUniType {
+                if features.count >= 10 {
+                    return features[9]
+                }
+                return ""
+            }else{
+                return reading
+
+            }
+        case .hiragana:
+            if isUniType {
+                if features.count >= 10 {
+                    return features[9].hiraganaString
+                }
+                return ""
+            }else{
+                return reading.hiraganaString
+
+            }
+
+        case .romaji:
+            if isUniType {
+                if features.count >= 10 {
+                    return features[9].romanizedString(method: .hepburn)
+                }
+                return ""
+            }else{
+                return reading.romanizedString(method: .hepburn)
+
+            }
+        }
+    }
+
+
+    
+    /*
+     let pos1 = fields[0]
+     let pos2 = fields[1]
+     let pos3 = fields[2]
+     let pos4 = fields[3]
+     let lemma = fields[7]
+     let orth = fields[8]
+     let pron = fields[9]
+     
+     let partOfSpeech = [pos1, pos2, pos3, pos4].filter { $0 != "*" }.joined(separator: "-").nilIfEmpty()
+     let reading = pron != "*" ? pron.toHiragana() : nil
+     let pronunciation = reading != nil ? reading!.toRomaji() : nil
+     
+     return TokenFeatures(
+         surface: orth != "*" ? orth : "",
+         partOfSpeech: partOfSpeech,
+         originalForm: lemma != "*" ? lemma : nil,
+         reading: reading,
+         pronunciation: pronunciation
+     )
+     */
 
     
     /**
