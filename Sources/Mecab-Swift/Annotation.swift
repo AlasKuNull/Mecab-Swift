@@ -109,7 +109,7 @@ public struct Annotation:Equatable, FuriganaAnnotating{
         case .hiragana:
             if isUniType {
                 if features.count >= 10 {
-                    return features[9].hiraganaString
+                    return convertKatakanaToHiraganaWithLongVowels(features[9])
                 }
                 return ""
             }else{
@@ -120,7 +120,8 @@ public struct Annotation:Equatable, FuriganaAnnotating{
         case .romaji:
             if isUniType {
                 if features.count >= 10 {
-                    return features[9].romanizedString(method: .hepburn)
+                    // UniDic的当前形态发音在features[9]中，转换为罗马字
+                    return convertKatakanaToHiraganaWithLongVowels(features[9]).romanizedString(method: .hepburn)
                 }
                 return ""
             }else{
@@ -182,6 +183,53 @@ public struct Annotation:Equatable, FuriganaAnnotating{
         }
         else{
             return FuriganaAnnotation(reading: self.reading , range: self.range)
+        }
+    }
+    
+    // 手动处理片假名到平假名的转换，正确处理长音符号
+    private func convertKatakanaToHiraganaWithLongVowels(_ katakana: String) -> String {
+        var result = ""
+        var previousVowelType: String? = nil
+        
+        for char in katakana {
+            let charStr = String(char)
+            
+            if charStr == "ー" {
+                // 长音符号，根据前一个音的元音类型添加相应的平假名
+                if let vowelType = previousVowelType {
+                    result += vowelType
+                }
+            } else {
+                // 普通字符，转换为平假名
+                let hiraganaChar = charStr.hiraganaString
+                result += hiraganaChar
+                
+                // 记录当前字符的元音类型，用于处理后续的长音符号
+                previousVowelType = getVowelType(hiraganaChar)
+            }
+        }
+        
+        return result
+    }
+    
+    // 获取平假名字符的元音类型
+    private func getVowelType(_ hiragana: String) -> String {
+        let lastChar = hiragana.last
+        guard let char = lastChar else { return "う" }
+        
+        switch char {
+        case "あ", "か", "が", "さ", "ざ", "た", "だ", "な", "は", "ば", "ぱ", "ま", "や", "ら", "わ":
+            return "あ"
+        case "い", "き", "ぎ", "し", "じ", "ち", "ぢ", "に", "ひ", "び", "ぴ", "み", "り":
+            return "い"
+        case "う", "く", "ぐ", "す", "ず", "つ", "づ", "ぬ", "ふ", "ぶ", "ぷ", "む", "ゆ", "る":
+            return "う"
+        case "え", "け", "げ", "せ", "ぜ", "て", "で", "ね", "へ", "べ", "ぺ", "め", "れ":
+            return "え"
+        case "お", "こ", "ご", "そ", "ぞ", "と", "ど", "の", "ほ", "ぼ", "ぽ", "も", "よ", "ろ", "を":
+            return "う" // お段音的长音通常用"う"
+        default:
+            return "う"
         }
     }
 }

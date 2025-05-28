@@ -185,7 +185,18 @@ public class Tokenizer{
                continue
            }
            if let foundRange=text.range(of: searchString, options: [], range: searchRange, locale: nil){
-               var annotation=Annotation(token: token, range: foundRange, transliteration: transliteration)
+               // 对于UniDic，使用正确的reading字段
+               let correctReading: String
+               if self.isUnidicTokenizer && token.features.count >= 10 {
+                   // UniDic的当前形态发音在features[9]中（片假名形式），需要转换为平假名
+                   let katakanaReading = token.features[9]
+                   // 手动处理长音符号转换
+                   correctReading = convertKatakanaToHiraganaWithLongVowels(katakanaReading)
+               } else {
+                   correctReading = token.reading
+               }
+               
+               var annotation=Annotation(base: token.original, reading: correctReading, features:token.features, range: foundRange, dictionaryForm: token.dictionaryForm, transliteration: transliteration, POS: token.partOfSpeech)
                annotation.isUniType = self.isUnidicTokenizer
                annotations.append(annotation)
                
@@ -248,6 +259,53 @@ public class Tokenizer{
     
     deinit {
         mecab_destroy(_mecab)
+    }
+    
+    // 手动处理片假名到平假名的转换，正确处理长音符号
+    private func convertKatakanaToHiraganaWithLongVowels(_ katakana: String) -> String {
+        var result = ""
+        var previousVowelType: String? = nil
+        
+        for char in katakana {
+            let charStr = String(char)
+            
+            if charStr == "ー" {
+                // 长音符号，根据前一个音的元音类型添加相应的平假名
+                if let vowelType = previousVowelType {
+                    result += vowelType
+                }
+            } else {
+                // 普通字符，转换为平假名
+                let hiraganaChar = charStr.hiraganaString
+                result += hiraganaChar
+                
+                // 记录当前字符的元音类型，用于处理后续的长音符号
+                previousVowelType = getVowelType(hiraganaChar)
+            }
+        }
+        
+        return result
+    }
+    
+    // 获取平假名字符的元音类型
+    private func getVowelType(_ hiragana: String) -> String {
+        let lastChar = hiragana.last
+        guard let char = lastChar else { return "う" }
+        
+        switch char {
+        case "あ", "か", "が", "さ", "ざ", "た", "だ", "な", "は", "ば", "ぱ", "ま", "や", "ら", "わ":
+            return "あ"
+        case "い", "き", "ぎ", "し", "じ", "ち", "ぢ", "に", "ひ", "び", "ぴ", "み", "り":
+            return "い"
+        case "う", "く", "ぐ", "す", "ず", "つ", "づ", "ぬ", "ふ", "ぶ", "ぷ", "む", "ゆ", "る":
+            return "う"
+        case "え", "け", "げ", "せ", "ぜ", "て", "で", "ね", "へ", "べ", "ぺ", "め", "れ":
+            return "え"
+        case "お", "こ", "ご", "そ", "ぞ", "と", "ど", "の", "ほ", "ぼ", "ぽ", "も", "よ", "ろ", "を":
+            return "う" // お段音的长音通常用"う"
+        default:
+            return "う"
+        }
     }
     
 }
